@@ -23,11 +23,19 @@ from utils.reputation_checker import ReputationChecker
 
 app = Flask(__name__)
 
-# Initialize
-print("Loading phishing detection model...")
-detector = PhishingDetector()
-reputation_checker = ReputationChecker()
-print("Systems ready!")
+# Initialize as None so the server can boot up instantly
+detector = None
+reputation_checker = None
+
+@app.before_request
+def initialize_models():
+    """This loads the heavy ML models only when the first person visits the site"""
+    global detector, reputation_checker
+    if detector is None:
+        print("First visitor detected! Loading heavy ML models now...")
+        detector = PhishingDetector()
+        reputation_checker = ReputationChecker()
+        print("Systems ready!")
 
 # Storage
 scan_history = []
