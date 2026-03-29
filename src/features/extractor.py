@@ -197,19 +197,37 @@ class URLFeatureExtractor:
         return letters / len(url)
     
     def _get_domain_age(self, domain):
-        """Get domain age in days"""
-        if not domain or '.' not in domain:
-            return -1
+        """Get domain age in days from WHOIS records"""
+        if not domain or '.' not in domain or domain.count('.') > 2:
+            return -1 # Skip IPs or local subdomains
+            
         try:
             w = whois.whois(domain)
             creation_date = w.creation_date
             
+            # creation_date can be a single datetime object or a list
             if isinstance(creation_date, list):
                 creation_date = creation_date[0]
             
             if creation_date:
-                age = (datetime.now() - creation_date).days
-                return age
+                # Handle cases where creation_date is not a datetime (rare, but happens)
+                if not isinstance(creation_date, datetime):
+                    return -1
+                
+                # Ensure comparison is done with aware datetimes to avoid naive vs aware error
+                # python-whois dates are often offset-aware
+                if creation_date.tzinfo is None:
+                    # Make naive creation_date aware (assume UTC)
+                    creation_date = creation_date.replace(tzinfo=whois.timezone.utc if hasattr(whois, 'timezone') else None)
+                
+                # If still naive or library doesn't have timezone, just make now naive
+                if creation_date.tzinfo is None:
+                    age_delta = datetime.now() - creation_date
+                else:
+                    from datetime import timezone
+                    age_delta = datetime.now(timezone.utc) - creation_date
+                
+                return max(0, age_delta.days)
         except:
             pass
         return -1

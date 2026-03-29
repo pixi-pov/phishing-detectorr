@@ -24,12 +24,37 @@ class ReputationChecker:
         # Cache results to avoid rate limits
         self.cache = {}
         self.cache_timeout = 300  # 5 minutes
+        
+        # Trusted Whitelist (Major Brands + Essential Services)
+        self.whitelist = {
+            'google.com', 'google.co.in', 'youtube.com', 'facebook.com', 'instagram.com',
+            'twitter.com', 'linkedin.com', 'microsoft.com', 'apple.com', 'amazon.com',
+            'netflix.com', 'github.com', 'stackoverflow.com', 'wikipedia.org',
+            'reddit.com', 'gmail.com', 'outlook.com', 'yahoo.com', 'bing.com',
+            'paypal.com', 'ebay.com', 'chase.com', 'bankofamerica.com', 'wellsfargo.com',
+            'citibank.com', 'stripe.com', 'shopify.com', 'adobe.com', 'salesforce.com',
+            'zoom.us', 'slack.com', 'discord.com', 'spotify.com', 'twitch.tv',
+            'airbnb.com', 'uber.com', 'lyft.com', 'doordash.com', 'instacart.com',
+            'dropbox.com', 'box.com', 'trello.com', 'asana.com', 'notion.so',
+            'medium.com', 'quora.com', 'tumblr.com', 'pinterest.com', 'tiktok.com',
+            'snapchat.com', 'whatsapp.com', 'telegram.org', 'signal.org'
+        }
     
     def check_url(self, url):
         """Check URL against all available reputation sources"""
         # Extract domain
         ext = tldextract.extract(url)
-        domain = f"{ext.domain}.{ext.suffix}"
+        domain = f"{ext.domain}.{ext.suffix}".lower()
+        
+        # Immediate Whitelist Check
+        if domain in self.whitelist:
+            return {
+                'domain': domain,
+                'overall_risk': 'low',
+                'reputation_score': 0,
+                'sources_checked': ['whitelist'],
+                'details': {'whitelist': 'Known trusted domain'}
+            }
         
         # Check cache
         if domain in self.cache:
